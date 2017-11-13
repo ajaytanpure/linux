@@ -6205,6 +6205,7 @@ void kvm_vcpu_deactivate_apicv(struct kvm_vcpu *vcpu)
 	kvm_x86_ops->refresh_apicv_exec_ctrl(vcpu);
 }
 
+unsigned long counter = 0;
 int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
 {
 	unsigned long nr, a0, a1, a2, a3, ret;
@@ -6244,6 +6245,56 @@ int kvm_emulate_hypercall(struct kvm_vcpu *vcpu)
 	case KVM_HC_KICK_CPU:
 		kvm_pv_kick_cpu_op(vcpu->kvm, a0, a1);
 		ret = 0;
+		break;
+
+	case 0x0F3B:
+		nr = nr>>32;
+		printk(KERN_INFO "Fn:%lx\n",nr);
+		printk(KERN_INFO "ebx:%lx\n",a0);
+		printk(KERN_INFO "ecx:%lx\n",a1);
+		printk(KERN_INFO "edx:%lx\n",a2);
+		kvm_cpuid(vcpu,(u32 *)&nr,(u32 *)&a0,(u32 *)&a1,(u32 *)&a2);
+		printk(KERN_INFO "Fn:%lx\n",nr);
+		printk(KERN_INFO "Fn:%lx\n",nr);
+		printk(KERN_INFO "Fn:%lx\n",nr);
+		printk(KERN_INFO "Fn:%lx\n",nr);
+		ret = (u32)nr;
+		kvm_register_write(vcpu,VCPU_REGS_RBX,(u32)a0);
+		kvm_register_write(vcpu,VCPU_REGS_RCX,(u32)a1);
+		kvm_register_write(vcpu,VCPU_REGS_RDX,(u32)a2);
+		break;
+
+	case 0x0F3C:
+		nr = nr >> 32;
+		if(a1==0xA0000000)
+		{
+			kvm_register_write(vcpu,VCPU_REGS_RBX,0x00333832);//\0328
+			ret = 0x45504d43;
+		}
+		else{
+			kvm_register_write(vcpu,VCPU_REGS_RBX,(u32)a0);
+			ret = (u32)nr;
+		}
+		printk(KERN_INFO "Fn:%lx\n",nr);
+		printk(KERN_INFO "ebx:%lx\n",a0);
+		printk(KERN_INFO "ecx:%lx\n",a1);
+		printk(KERN_INFO "edx:%lx\n",a2);
+		kvm_cpuid(vcpu,(u32 *)&nr,(u32 *)&a0,(u32 *)&a1,(u32 *)&a2);
+		printk(KERN_INFO "Fn:%lx\n",nr);
+		printk(KERN_INFO "Fn:%lx\n",nr);
+		printk(KERN_INFO "Fn:%lx\n",nr);
+		printk(KERN_INFO "Fn:%lx\n",nr);
+		kvm_register_write(vcpu,VCPU_REGS_RCX,(u32)a1);
+		kvm_register_write(vcpu,VCPU_REGS_RDX,(u32)a2);
+		break;
+
+	case 0x0F3D:
+		ret = (u32)counter;
+		if(counter == 0xFFFFFFFF)
+		{
+			counter = 0;
+		}
+		counter++;
 		break;
 #ifdef CONFIG_X86_64
 	case KVM_HC_CLOCK_PAIRING:
